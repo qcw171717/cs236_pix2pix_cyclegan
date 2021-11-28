@@ -45,7 +45,7 @@ class AlignedDataset(BaseDataset):
         A = AB.crop((0, 0, w2, h))
         B = AB.crop((w2, 0, w, h))
         if self.opt.no_rand_rot is False:
-            print("using random_rot!")
+            # print("using random_rot!")
             if random.random() > 0.2:
                 angle_bound = 10
                 random_angle = (random.random() - 0.5) * 2 * angle_bound

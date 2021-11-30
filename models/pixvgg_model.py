@@ -65,7 +65,7 @@ class PixvggModel(BaseModel):
             # define loss functions
             self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)
             self.criterionL1 = torch.nn.L1Loss()
-            self.VGG = VGG_loss.VGGPerceptualLoss()
+            self.VGG = VGG_loss.VGGPerceptualLoss().to(self.device)
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
@@ -112,7 +112,7 @@ class PixvggModel(BaseModel):
         self.loss_G_GAN = self.criterionGAN(pred_fake, True)
         # Second, G(A) = B
         self.loss_G_L1 = self.criterionL1(self.fake_B, self.real_B) * self.opt.lambda_L1
-        self.VGG_loss = self.VGG(self.fake_B, self.real_B) * self.opt.lambda_L1
+        self.VGG_loss = self.VGG(self.fake_B, self.real_B).to(self.device) * self.opt.lambda_L1
         # combine loss and calculate gradients
         # self.loss_G = self.loss_G_GAN + self.loss_G_L1
         self.loss_G = self.loss_G_GAN + self.VGG_loss

@@ -1,5 +1,7 @@
 import os
 import torch
+import torch.nn.functional as F
+
 from collections import OrderedDict
 from abc import ABC, abstractmethod
 from . import networks
@@ -113,12 +115,25 @@ class BaseModel(ABC):
         """Calculate additional output images for visdom and HTML visualization"""
         pass
     
+    def prepare_data_for_inception(x, device):
+        """
+        Preprocess data to be feed into the Inception model.
+        """
+        
+        x = F.interpolate(x, 299, mode="bicubic", align_corners=False)
+        minv, maxv = float(x.min()), float(x.max())
+        x.clamp_(min=minv, max=maxv).add_(-minv).div_(maxv - minv + 1e-5)
+        x.mul_(255).add_(0.5).clamp_(0, 255)
+    
+        return x.to(device).to(torch.uint8)
+
     def compute_metrics(self):
-        print(type(self.real_B))
-        self.fid.update(self.real_B, real=True)
-        self.fid.update(self.fake_B, real=False)
-        self.kid.update(self.real_B, real=True)
-        self.kid.update(self.fake_B, real=False)
+        reals = self.prepare_data_for_inception(self.real_B, self.device)
+        fakes = self.prepare_data_for_inception(self.fake_B, self.device)
+        self.fid.update(reals, real=True)
+        self.fid.update(fakes, real=False)
+        self.kid.update(reals, real=True)
+        self.kid.update(fakes, real=False)
         
     def get_metrics(self):
         metrics ={

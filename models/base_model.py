@@ -4,6 +4,7 @@ from collections import OrderedDict
 from abc import ABC, abstractmethod
 from . import networks
 
+from torchmetrics import  FID, KID
 
 class BaseModel(ABC):
     """This class is an abstract base class (ABC) for models.
@@ -42,6 +43,8 @@ class BaseModel(ABC):
         self.optimizers = []
         self.image_paths = []
         self.metric = 0  # used for learning rate policy 'plateau'
+        self.fid = FID().to(self.device)
+        self.kid = KID().to(self.device)
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
@@ -104,11 +107,25 @@ class BaseModel(ABC):
         with torch.no_grad():
             self.forward()
             self.compute_visuals()
+            self.compute_metrics()
 
     def compute_visuals(self):
         """Calculate additional output images for visdom and HTML visualization"""
         pass
-
+    
+    def compute_metrics(self):
+        self.fid.update(self.real_B, real=True)
+        self.fid.update(self.fake_B, real=False)
+        self.kid.update(self.real_B, real=True)
+        self.kid.update(self.fake_B, real=False)
+        
+    def get_metrics(self):
+        metrics ={
+            "FID": self.fid.compute().item(),
+            "KID": self.kid.compute()[0].item(),
+        }
+        return metrics
+        
     def get_image_paths(self):
         """ Return image paths that are used to load current data"""
         return self.image_paths

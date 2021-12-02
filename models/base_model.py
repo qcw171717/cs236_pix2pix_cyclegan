@@ -114,6 +114,7 @@ class BaseModel(ABC):
         pass
     
     def compute_metrics(self):
+        print(type(self.real_B))
         self.fid.update(self.real_B, real=True)
         self.fid.update(self.fake_B, real=False)
         self.kid.update(self.real_B, real=True)

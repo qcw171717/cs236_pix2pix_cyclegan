@@ -115,7 +115,7 @@ class BaseModel(ABC):
         """Calculate additional output images for visdom and HTML visualization"""
         pass
     
-    def prepare_data_for_inception(x, device):
+    def prepare_data_for_inception(self, x, device):
         """
         Preprocess data to be feed into the Inception model.
         """

@@ -43,6 +43,8 @@ class BaseModel(ABC):
         self.optimizers = []
         self.image_paths = []
         self.metric = 0  # used for learning rate policy 'plateau'
+        self.fid = FID().to(self.device)
+        self.kid = KID().to(self.device)
 
     @staticmethod
     def modify_commandline_options(parser, is_train):

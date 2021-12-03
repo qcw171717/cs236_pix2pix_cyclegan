@@ -33,6 +33,7 @@ from models import create_model
 from util.visualizer import save_images
 from util import html
 import wandb
+import pprint
 
 if __name__ == '__main__':
     opt = TestOptions().parse()  # get test options
@@ -73,3 +74,5 @@ if __name__ == '__main__':
             print('processing (%04d)-th image... %s' % (i, img_path))
         save_images(webpage, visuals, img_path, aspect_ratio=opt.aspect_ratio, width=opt.display_winsize, use_wandb=opt.use_wandb)
     webpage.save()  # save the HTML
+    metrics = model.get_metrics()
+    pprint.pprint(metrics)

@@ -3,6 +3,8 @@ import torch
 from collections import OrderedDict
 from abc import ABC, abstractmethod
 from . import networks
+from torchmetrics import  FID, KID
+import torch.nn.functional as F
 
 
 class BaseModel(ABC):
@@ -42,6 +44,8 @@ class BaseModel(ABC):
         self.optimizers = []
         self.image_paths = []
         self.metric = 0  # used for learning rate policy 'plateau'
+        self.fid = FID().to(self.device)
+        self.kid = KID().to(self.device)
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
@@ -104,11 +108,46 @@ class BaseModel(ABC):
         with torch.no_grad():
             self.forward()
             self.compute_visuals()
-
+            self.compute_metrics()
+    
+    
     def compute_visuals(self):
         """Calculate additional output images for visdom and HTML visualization"""
         pass
+    
+    def prepare_data_for_inception(self, x, device):
+        """
+        Preprocess data to be feed into the Inception model.
+        """
+        
+        x = F.interpolate(x, 299, mode="bicubic", align_corners=False)
+        minv, maxv = float(x.min()), float(x.max())
+        x.clamp_(min=minv, max=maxv).add_(-minv).div_(maxv - minv + 1e-5)
+        x.mul_(255).add_(0.5).clamp_(0, 255)
+    
+        return x.to(device).to(torch.uint8)
+    
+    def compute_metrics(self):
+        reals = self.prepare_data_for_inception(self.real_B, self.device)
+        fakes = self.prepare_data_for_inception(self.fake_B, self.device)
+        self.fid.update(reals, real=True)
+        self.fid.update(fakes, real=False)
+        self.kid.update(reals, real=True)
+        self.kid.update(fakes, real=False)
+        
+    def get_metrics(self):
+        metrics ={
+            "FID": self.fid.compute().item(),
+            "KID": self.kid.compute()[0].item(),
+        }
+        return metrics
+    
 
+    
+   
+    
+        
+    
     def get_image_paths(self):
         """ Return image paths that are used to load current data"""
         return self.image_paths
